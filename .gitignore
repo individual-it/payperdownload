@@ -544,3 +544,6 @@
 /joomla.xml
 /*.txt
 /robots.txt.dist
+/.settings/
+/.project
+/.buildpath
