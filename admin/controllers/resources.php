@@ -231,18 +231,23 @@ class ResourcesForm extends PPDForm
 				&$resourceDesc));
 		$license_id = JRequest::getInt('license_id', 0);
 		$resource_price = JRequest::getVar('resource_price');
-		$download_expiration = JRequest::getInt('download_expiration');
+		$download_expiration = JRequest::getVar('download_expiration');
 		$max_download = JRequest::getInt('max_download', 0);
 		$shared = JRequest::getInt('shared', 1);
 		$payment_header = JRequest::getVar( 'payment_header', '', 'post','string', JREQUEST_ALLOWRAW );
 		if(!$license_id)
 		{
-			if(!preg_match('/^\s*\d+(\.\d+)?\s*$/', $resource_price))
+			if(!preg_match('/^\s*(\d+(\.\d+)?\|?)+\s*$/', $resource_price))
 			{
 				$this->redirectToList(JText::_("PAYPERDOWNLOADPLUS_INVALID_PRICE"), "error");
 				exit;
 			}
-			$resource_price = (float)$resource_price;
+			if(!preg_match('/^\s*(\d+\|?)+\s*$/', $download_expiration) || 
+				count(explode("|", $resource_price)) !== count(explode("|", $download_expiration)))
+			{
+				$this->redirectToList(JText::_("PAYPERDOWNLOADPLUS_INVALID_EXPIRATION"), "error");
+				exit;
+			}
 			$resource_price_currency = JRequest::getVar('resource_price_currency');
 			$resource_price_currency = "'" . $db->escape($resource_price_currency) . "'";
 			$license_id = "NULL";
@@ -281,11 +286,11 @@ class ResourcesForm extends PPDForm
 					resource_name = '$resourceName',
 					resource_description = '$resourceDesc',
 					resource_option_parameter = '$optionParameter',
-					resource_price = $resource_price,
+					resource_price = '$resource_price',
 					resource_price_currency = $resource_price_currency,
 					resource_params = '$resourceParams',
 					alternate_resource_description = '$alt_desc',
-					download_expiration = $download_expiration,
+					download_expiration = '$download_expiration',
 					payment_header = '$payment_header',
 					max_download = $max_download,
 					shared = $shared
@@ -311,18 +316,23 @@ class ResourcesForm extends PPDForm
 		$db = JFactory::getDBO();
 		$license_id = JRequest::getInt('license_id', 0);
 		$resource_price = JRequest::getVar('resource_price');
-		$download_expiration = JRequest::getInt('download_expiration');
+		$download_expiration = JRequest::getVar('download_expiration');
 		$payment_header = JRequest::getVar( 'payment_header', '', 'post','string', JREQUEST_ALLOWRAW );
 		$max_download = JRequest::getInt('max_download', 0);
 		$shared = JRequest::getInt('shared', 1);
 		if(!$license_id)
 		{
-			if(!preg_match('/^\s*\d+(\.\d+)?\s*$/', $resource_price))
+			if(!preg_match('/^\s*(\d+(\.\d+)?\|?)+\s*$/', $resource_price))
 			{
 				$this->redirectToList(JText::_("PAYPERDOWNLOADPLUS_INVALID_PRICE"), "error");
 				exit;
 			}
-			$resource_price = (float)$resource_price;
+			if(!preg_match('/^\s*(\d+\|?)+\s*$/', $download_expiration) ||
+				count(explode("|", $resource_price)) !== count(explode("|", $download_expiration)))
+			{
+				$this->redirectToList(JText::_("PAYPERDOWNLOADPLUS_INVALID_EXPIRATION"), "error");
+				exit;
+			}
 			$resource_price_currency = JRequest::getVar('resource_price_currency');
 			$resource_price_currency = "'" . $db->escape($resource_price_currency) . "'";
 			$license_id = "NULL";
@@ -370,10 +380,10 @@ class ResourcesForm extends PPDForm
 					VALUES($license_id, '$resourceId', '$resourceType', '$resourceName', 
 					'$resourceDesc', 
 					'$optionParameter', 
-					$resource_price,
+					'$resource_price',
 					$resource_price_currency,
 					'$resourceParams',
-					$download_expiration,
+					'$download_expiration',
 					'$payment_header', 
 					$max_download,
 					$shared)";

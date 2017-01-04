@@ -38,110 +38,129 @@ if($this->resourceObj)
 
 	<br/>
 	<div class="front_title"><?php echo htmlspecialchars($this->resourceObj->resource_name)."&nbsp;&nbsp;&nbsp;";?></div>
-	<span class="front_price_label"><?php echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_PRICE___4"));?></span>
-	<span class="front_price_data"><?php echo htmlspecialchars($this->resourceObj->resource_price) . "&nbsp;" . htmlspecialchars($this->resourceObj->resource_price_currency);?></span>
-	<br/>
-	<?php
-	if($this->tax_percent >= 0.01)
-	{
-	?>
-	<span class="front_price_label"><?php echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_TAX"));?></span>
-	<span class="front_price_data"><?php echo htmlspecialchars(sprintf("%01.2f", $this->resourceObj->resource_price * $this->tax_percent / 100.0)) . "&nbsp;" . htmlspecialchars($this->resourceObj->resource_price_currency);?></span>
-	<br/>
-	<?php
-	}
-	?>
-	<span class="front_price_label"><?php echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_DOWNLOADS_COUNT"));?></span>
-	<span class="front_price_data">
+	<div style="display: table;" class="payperdownload_pay_table">
 	<?php 
-		if($this->resourceObj->max_download > 0)
-			echo htmlspecialchars($this->resourceObj->max_download);
-		else
-			echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_UNLIMITED_DOWNLOADS"));
-	?></span>
-	<br/>
-	
-	<span class="front_price_label"><?php echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_LICENSE_EXPIRATION_TIME"));?></span>
-	<span class="front_price_data"><?php 
-		if($this->resourceObj->download_expiration > 0)
-			echo htmlspecialchars(JText::sprintf("PAYPERDOWNLOADPLUS_LICENSE_EXPIRATION_TIME_VALUE", $this->resourceObj->download_expiration)); 
-		else
-			echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_LICENSE_EXPIRATION_LIFE_TIME"));
-	?></span>
-	<br/>
-	
-	<br/><br/>
-	
-	<?php
+	$prices = explode("|",$this->resourceObj->resource_price);
+	$download_expirations = explode("|",$this->resourceObj->download_expiration);
+	for($price_num=0;$price_num<count($prices);$price_num++)
 	{
-		if($this->usePaypal)
-		{
-			if($this->paymentInfo->test_mode)
+		$resource_price=$prices[$price_num];
+		$download_expiration=$download_expirations[$price_num];
+		?>
+		<div style="display: table-row;" class="payperdownload_pay_table_row">
+			<div style="display: table-cell;" class="payperdownload_pay_table_cell">
+			<span class="front_price_label"><?php echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_PRICE___4"));?></span>
+			<span class="front_price_data"><?php echo htmlspecialchars($resource_price) . "&nbsp;" . htmlspecialchars($this->resourceObj->resource_price_currency);?></span>
+			<br/>
+			<?php
+			if($this->tax_percent >= 0.01)
 			{
-				if($this->paymentInfo->usesimulator)
-					$paypal = "index.php?option=com_payperdownload&amp;task=paypalsim";
+			?>
+			<span class="front_price_label"><?php echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_TAX"));?></span>
+			<span class="front_price_data"><?php echo htmlspecialchars(sprintf("%01.2f", $resource_price * $this->tax_percent / 100.0)) . "&nbsp;" . htmlspecialchars($this->resourceObj->resource_price_currency);?></span>
+			<br/>
+			<?php
+			}
+			?>
+			<span class="front_price_label"><?php echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_DOWNLOADS_COUNT"));?></span>
+			<span class="front_price_data">
+			<?php 
+				if($this->resourceObj->max_download > 0)
+					echo htmlspecialchars($this->resourceObj->max_download);
 				else
-					$paypal = "https://www.sandbox.paypal.com/cgi-bin/webscr";
-			}
-			else
+					echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_UNLIMITED_DOWNLOADS"));
+			?></span>
+			<br/>
+			
+			<span class="front_price_label"><?php echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_LICENSE_EXPIRATION_TIME"));?></span>
+			<span class="front_price_data"><?php 
+				if($download_expiration > 0)
+					echo htmlspecialchars(JText::sprintf("PAYPERDOWNLOADPLUS_LICENSE_EXPIRATION_TIME_VALUE", $download_expiration)); 
+				else
+					echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_LICENSE_EXPIRATION_LIFE_TIME"));
+			?></span>
+			<br/>
+			
+			<br/><br/>
+			</div>
+			<?php
 			{
-				$paypal = "https://www.paypal.com/cgi-bin/webscr";
-			}
-		?>
-		<form action="index.php" method="post">
-		<input type="hidden" name="option" value="com_payperdownload"/>
-		<input type="hidden" name="task" value="paypalpay"/>
-		<input type="hidden" name="ppd_item_type" value="resource"/>
-		<input type="hidden" name="cmd" value="_xclick"/>
-		<input type="hidden" name="custom" value="<?php echo htmlspecialchars($this->download_id);?>"/>
-		<input type="hidden" name="item_number" value="<?php echo htmlspecialchars($this->resourceObj->resource_license_id); ?>"/>
-		<input type="hidden" name="item_name" value="<?php echo htmlspecialchars($this->resourceObj->resource_name); ?>"/>
-		<input type="hidden" name="amount" value="<?php echo htmlspecialchars($this->resourceObj->resource_price); ?>"/>
-		<input type="hidden" name="currency_code" value="<?php echo htmlspecialchars($this->resourceObj->resource_price_currency); ?>"/>
-		<?php
-		/*if($this->useDiscountCoupon)
-		{
-		echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_DISCOUNT_COUPON"));
-		?>
-		<input type="text" name="coupon_code"/><br/>
-		<?php
-		}*/
-		if($this->tax_percent >= 0.01)
-		{
-		?>
-		<input type="hidden" name="tax" value="<?php echo htmlspecialchars(sprintf("%01.2f", $this->resourceObj->resource_price * $this->tax_percent / 100.0));?>"/>
-		<?php
+				if($this->usePaypal)
+				{
+					if($this->paymentInfo->test_mode)
+					{
+						if($this->paymentInfo->usesimulator)
+							$paypal = "index.php?option=com_payperdownload&amp;task=paypalsim";
+						else
+							$paypal = "https://www.sandbox.paypal.com/cgi-bin/webscr";
+					}
+					else
+					{
+						$paypal = "https://www.paypal.com/cgi-bin/webscr";
+					}
+				?>
+				<form action="index.php" method="post" style="display: table-cell;" class="payperdownload_pay_table_cell">
+				<input type="hidden" name="option" value="com_payperdownload"/>
+				<input type="hidden" name="task" value="paypalpay"/>
+				<input type="hidden" name="ppd_item_type" value="resource"/>
+				<input type="hidden" name="cmd" value="_xclick"/>
+				<input type="hidden" name="custom" value="<?php echo htmlspecialchars($this->download_id);?>"/>
+				<input type="hidden" name="item_number" value="<?php echo htmlspecialchars($this->resourceObj->resource_license_id); ?>"/>
+				<input type="hidden" name="item_name" value="<?php echo htmlspecialchars($this->resourceObj->resource_name); ?>"/>
+				<input type="hidden" name="amount" value="<?php echo htmlspecialchars($resource_price); ?>"/>
+				<input type="hidden" name="currency_code" value="<?php echo htmlspecialchars($this->resourceObj->resource_price_currency); ?>"/>
+				<?php
+				/*if($this->useDiscountCoupon)
+				{
+				echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_DISCOUNT_COUPON"));
+				?>
+				<input type="text" name="coupon_code"/><br/>
+				<?php
+				}*/
+				if($this->tax_percent >= 0.01)
+				{
+				?>
+				<input type="hidden" name="tax" value="<?php echo htmlspecialchars(sprintf("%01.2f", $resource_price * $this->tax_percent / 100.0));?>"/>
+				<?php
+				}
+				$params = "&r=" . base64_encode($this->returnUrl);
+				?>
+				<input type="hidden" name="notify_url" value="<?php echo htmlspecialchars($root . "index.php?option=com_payperdownload&task=confirmres" . $params);?>"/>
+				<?php 
+					if($this->thankyouUrl){
+					?>
+					<input type="hidden" name="return" value="<?php echo htmlspecialchars($this->thankyouUrl);?>"/>
+					<?php }?>
+					<input type="hidden" name="no_note" value="1"/>
+					<input type="hidden" name="no_shipping" value="1"/>
+					<input type="hidden" name="rm" value="2"/>
+					<input type="image" src="http://www.paypal.com/<?php echo $paypal_button_lang_folder;?>/i/btn/btn_paynowCC_LG.gif" name="submit" alt="<?php echo JText::_("PAYPERDOWNLOADPLUS_PAYPAL_BUTTON_ALTERNATE_TEXT");?>"/>
+					<img alt="" src="https://www.paypal.com/<?php echo $paypal_button_lang_folder;?>/i/scr/pixel.gif" width="1" height="1"/>
+					</form>
+					<br/>
+					<?php
+				}
+				if($this->usePayPlugin)
+				{
+					$dispatcher->trigger('onRenderPaymentForm', array($this->user, null, $this->resourceObj, $this->returnUrl, $this->thankyouUrl));
+				}
+				if($this->hasLicenses)
+				{
+					?>
+					<hr/>
+					<div class="front_message"><?php echo $this->alternate_header;?></div>
+					<br/>
+				<?php
+				}
 		}
-		$params = "&r=" . base64_encode($this->returnUrl);
-		?>
-		<input type="hidden" name="notify_url" value="<?php echo htmlspecialchars($root . "index.php?option=com_payperdownload&task=confirmres" . $params);?>"/>
-		<?php 
-			if($this->thankyouUrl){
-			?>
-			<input type="hidden" name="return" value="<?php echo htmlspecialchars($this->thankyouUrl);?>"/>
-			<?php }?>
-			<input type="hidden" name="no_note" value="1"/>
-			<input type="hidden" name="no_shipping" value="1"/>
-			<input type="hidden" name="rm" value="2"/>
-			<input type="image" src="http://www.paypal.com/<?php echo $paypal_button_lang_folder;?>/i/btn/btn_paynowCC_LG.gif" name="submit" alt="<?php echo JText::_("PAYPERDOWNLOADPLUS_PAYPAL_BUTTON_ALTERNATE_TEXT");?>"/>
-			<img alt="" src="https://www.paypal.com/<?php echo $paypal_button_lang_folder;?>/i/scr/pixel.gif" width="1" height="1"/>
-			</form>
-			<br/>
-			<?php
-		}
-		if($this->usePayPlugin)
-		{
-			$dispatcher->trigger('onRenderPaymentForm', array($this->user, null, $this->resourceObj, $this->returnUrl, $this->thankyouUrl));
-		}
-		if($this->hasLicenses)
-		{
-			?>
-			<hr/>
-			<div class="front_message"><?php echo $this->alternate_header;?></div>
-			<br/>
-			<?php
-		}
+	?>
+	</div>
+	<?php
 	}
+	?>
+	</div>
+	<?php
+	/*close table div*/
 	?>
 	</div>
 	<?php

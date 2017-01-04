@@ -296,7 +296,7 @@ class PayPerDownloadModelPayResource extends JModelLegacy
 			$returnUrl = JRequest::getVar('r');
 			$returnUrl = base64_decode($returnUrl);
 			$download_link = $this->setDownloadLinkPayed($download_id, $resource_id,
-				$payer_email, $notify_email, $returnUrl);
+				$payer_email, $notify_email, $returnUrl,$amount);
 			$resource_name = $this->getResourceName( $resource_id_from_download_id ); 
 			$this->notifyPayment($payment_id, $payer_email, $download_link, $notify_email, $download_id, $resource_name);
 		}
@@ -346,16 +346,28 @@ class PayPerDownloadModelPayResource extends JModelLegacy
 		return $downloadLink;
 	}
 	
-	function setDownloadLinkPayed($download_id, $resource_id, $payer_email, $user_email, $returnUrl)
+	function setDownloadLinkPayed($download_id, $resource_id, $payer_email, $user_email, $returnUrl,$amount)
 	{
 		$download_id = (int)$download_id;
 		$resource_id = (int)$resource_id;
 		$db = JFactory::getDBO();
 		
-		$query = "SELECT download_expiration, max_download FROM #__payperdownloadplus_resource_licenses WHERE resource_license_id = " . $resource_id;
+		$query = "SELECT resource_price,download_expiration, max_download FROM #__payperdownloadplus_resource_licenses WHERE resource_license_id = " . $resource_id;
 		$db->setQuery( $query );
 		$res = $db->loadObject();
-		$days = (int)$res->download_expiration;
+		
+ 		$prices = explode("|",$res->resource_price);
+ 		$download_expirations = explode("|",$res->download_expiration);
+ 		for($price_num=0;$price_num<count($prices);$price_num++)
+ 		{
+ 			$resource_price=$prices[$price_num];
+ 			if (abs($resource_price-$amount) < 0.001) 
+ 			{
+ 				$download_expiration=$download_expirations[$price_num];
+ 				break;
+ 			}
+ 		}
+		$days = (int)$download_expiration;
 		if($days <= 0)
 			$days = 365;
 		$max_downloads = (int)$res->max_download;
@@ -421,7 +433,7 @@ class PayPerDownloadModelPayResource extends JModelLegacy
 	function validateResource($resource_id, $download_id, $payed_price, $currency_code)
 	{
 		$resource = $this->getResource($resource_id);
-		$price = $resource->resource_price;
+		$price = min(explode("|",$resource->resource_price));
 		/*$downloadObject = $this->getDownloadObject($download_id);
 		if($downloadObject && $downloadObject->discount && $downloadObject->discount > 0)
 		{
