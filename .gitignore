@@ -543,7 +543,10 @@
 /index.php
 /joomla.xml
 /*.txt
+/*.zip
 /robots.txt.dist
 /.settings/
 /.project
 /.buildpath
+/.externalToolBuilders/
+/build.xml
