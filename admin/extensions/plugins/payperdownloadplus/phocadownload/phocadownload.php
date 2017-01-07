@@ -1,21 +1,23 @@
 <?php
 /**
  * @component Pay per Download component
- * @author Ratmil Torres
- * @copyright (C) Ratmil Torres
- * @license GNU/GPL http://www.gnu.org/copyleft/gpl.html
+* @author Ratmil Torres
+* @copyright (C) Ratmil Torres
+* @license GNU/GPL http://www.gnu.org/copyleft/gpl.html
 **/
 defined( '_JEXEC' ) or
 die( 'Direct Access to this location is not allowed.' );
 
 // import the JPlugin class
 jimport('joomla.event.plugin');
+require_once(JPATH_PLUGINS.'/system/payperdownloadplus/payperdownloadplus.php');
 
-class plgPayperDownloadPlusPhocadownload extends JPlugin
+
+class plgPayperDownloadPlusPhocadownload extends plgSystemPayperDownloadPlus
 {
 	public function __construct(&$subject, $config = array())
-    {
-        parent::__construct($subject);
+	{
+		parent::__construct($subject, $config);
 		// load the language file
 		$lang = JFactory::getLanguage();
 		$lang->load('plg_payperdownloadplus_phocadownload', JPATH_SITE . '/administrator');
@@ -26,18 +28,18 @@ class plgPayperDownloadPlusPhocadownload extends JPlugin
 		jimport('joomla.filesystem.folder');
 		if(!JFolder::exists(JPATH_ROOT . '/administrator/components/com_phocadownload'))
 			return false;
-		$component = JComponentHelper::getComponent('com_phocadownload', true);
-		if($component->enabled)
-		{
-			jimport('joomla.filesystem.file');
-			$image = "";
-			if(JFile::exists(JPATH_ROOT . '/administrator/components/com_payperdownload/images/icon-48-phocadownload.png'))
-				$image = "administrator/components/com_payperdownload/images/icon-48-phocadownload.png";
-			$plugins[] = array("name" => "Phoca Download", "description" => JText::_("PAYPERDOWNLOADPLUS_PHOCA_DOWNLOAD_FILE_68"), 
-				"image" => $image);
-		}
+			$component = JComponentHelper::getComponent('com_phocadownload', true);
+			if($component->enabled)
+			{
+				jimport('joomla.filesystem.file');
+				$image = "";
+				if(JFile::exists(JPATH_ROOT . '/administrator/components/com_payperdownload/images/icon-48-phocadownload.png'))
+					$image = "administrator/components/com_payperdownload/images/icon-48-phocadownload.png";
+					$plugins[] = array("name" => "Phoca Download", "description" => JText::_("PAYPERDOWNLOADPLUS_PHOCA_DOWNLOAD_FILE_68"),
+							"image" => $image);
+			}
 	}
-	
+
 	function reorderCats(&$cats_ordered, $cats, $parent_id, $depth)
 	{
 		$count = count($cats);
@@ -53,7 +55,7 @@ class plgPayperDownloadPlusPhocadownload extends JPlugin
 			}
 		}
 	}
-	
+
 	function getCategories()
 	{
 		$version = new JVersion;
@@ -64,14 +66,95 @@ class plgPayperDownloadPlusPhocadownload extends JPlugin
 		$this->reorderCats($cats_ordered, $cats, 0, 0);
 		return $cats_ordered;
 	}
-	
+
 	function getDownloads($category)
 	{
 		$db = JFactory::getDBO();
 		$db->setQuery('SELECT id, title FROM #__phocadownload WHERE catid = ' . (int)$category);
 		return $db->loadObjectList();
 	}
-	
+
+	//searches for a Download button, if payment is needed for this ressource it replaces the
+	//text of the button to "Pay per download"
+	function onAfterRender() {
+		$access = JRequest::getVar('id', '');
+		$session = JFactory::getSession();
+		$s1=$session->getData();
+		$s2=$session->getStores();
+		$download_button_matches=array();
+		$app = JFactory::getApplication();
+		if($app->isAdmin()) {
+			return;
+		}
+
+
+		$body = JResponse::getBody();
+		$pattern = "/(<div class=\"pd-button-download\"><a class=\"btn btn-success\".*?download=(\d).*>)".JText::_('COM_PHOCADOWNLOAD_DOWNLOAD')."(<\/a>)/";
+		if(preg_match_all($pattern, $body,$download_button_matches))
+		{
+				
+			$option = JRequest::getVar('option');
+			$db = JFactory::getDBO();
+			$escaped_option = $db->escape($option);
+			$query = "SELECT resource_license_id, resource_id, resource_type, license_id, resource_params, shared
+			FROM #__payperdownloadplus_resource_licenses
+			WHERE (resource_option_parameter = '$escaped_option' OR
+			resource_option_parameter = '') AND #__payperdownloadplus_resource_licenses.enabled = 1";
+			$db->setQuery( $query );
+			$resources = $db->loadObjectList();
+			$user = JFactory::getUser();
+			if(count($resources) > 0)
+			{
+				foreach ($download_button_matches[2] as $download_id) {
+					$shared = true;
+					$allowAccess = true;
+					JRequest::setVar("download",$download_id);
+					$this->onValidateAccess($option, $resources, $allowAccess, $requiredLicenses, $resourcesId);
+					$requiresPayment = false;
+					$user = JFactory::getUser();
+					if(!$allowAccess)
+					{
+						$decreaseDownloadCount = false;
+						$this->onCheckDecreaseDownloadCount($option, $resources, $requiredLicenses, $resourcesId, $decreaseDownloadCount);
+						$checkSession = true;
+						$deleteResourceFromSession = false;
+						$requiresPayment = true;
+						if(count($resourcesId) > 0)
+							$shared = $this->isResourceShared((int)$resourcesId[0]);
+							$item = $this->getItemForResource($option);
+							if($user && $user->id)
+							{
+								if(
+										$this->isPrivilegedUser($user) ||
+										(count($requiredLicenses) > 0 && $this->isThereValidLicense($requiredLicenses, $decreaseDownloadCount, $item, $checkSession, $deleteResourceFromSession)) ||
+										(count($resourcesId) > 0 && $this->isTherePaidResource($resourcesId, $item, $decreaseDownloadCount, $shared, $checkSession, $deleteResourceFromSession)))
+								{
+									$requiresPayment = false;
+								}
+							}
+							else
+							{
+								if((count($resourcesId) > 0 && $this->isTherePaidResource($resourcesId, $item, $decreaseDownloadCount, $shared, $checkSession, $deleteResourceFromSession)))
+								{
+									$requiresPayment = false;
+								}
+							}
+					}
+					if($requiresPayment)
+					{
+						$pattern = "/(<div class=\"pd-button-download\"><a class=\"btn btn-success\".*?download=".$download_id.".*>)".JText::_('COM_PHOCADOWNLOAD_DOWNLOAD')."(<\/a>)/";
+
+						$body = preg_replace($pattern, "$1 ". JText::_('PAYPERDOWNLOADPLUS_PHOCADOWNLOAD_PLUGIN_DOWNLOAD') . "$2", $body);
+					}
+				}
+			}
+				
+				
+			JResponse::setBody($body);
+		}
+
+	}
+
 	function onRenderConfig($pluginName, $resource)
 	{
 		if($pluginName == "Phoca Download")
@@ -89,12 +172,12 @@ class plgPayperDownloadPlusPhocadownload extends JPlugin
 			$version = new JVersion;
 			if($version->RELEASE >= "1.6")
 				$plugin_path = "plugins/payperdownloadplus/phocadownload/";
-			else
-				$plugin_path = "plugins/payperdownloadplus/";
-			$scriptPath = $uri . $plugin_path;
-			JHTML::script($scriptPath . 'phoca_plugin.js', false);
-			$cats = $this->getCategories();
-			?>
+				else
+					$plugin_path = "plugins/payperdownloadplus/";
+					$scriptPath = $uri . $plugin_path;
+					JHTML::script($scriptPath . 'phoca_plugin.js', false);
+					$cats = $this->getCategories();
+					?>
 			<tr>
 			<td align="left" class="key"><?php echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_PHOCADOWNLOAD_PLUGIN_CATEGORY"));?></td>
 			<td>
@@ -201,8 +284,8 @@ class plgPayperDownloadPlusPhocadownload extends JPlugin
 			$requiredLicenses = array();
 			$download = JRequest::getInt('download', 0);
 			$resourcesId = array();
-			if($download == 0)
-				return;
+ 			if($download == 0)
+ 				return;
 			$view = JRequest::getVar('view');
 			if($view != 'file' && $view != 'category')
 				return;
@@ -225,8 +308,6 @@ class plgPayperDownloadPlusPhocadownload extends JPlugin
 				}
 				
 			}
-			
-			
 			
 			$download_categories = $this->getParentCategories($download);
 			//Check category licenses
