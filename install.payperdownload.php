@@ -86,7 +86,7 @@ class com_payperdownloadInstallerScript
 	
 	function uninstallPlugins()
 	{
-		$this->uninstall_plugin('payperdownloadplus');
+		$this->uninstall_plugin('payperdownloadplus','system',null,null,array('en-GB.plg_system_payperdownloadplus.ini'));
 		$this->uninstall_plugin('content', 'payperdownloadplus', null, array('content_plugin.js'), array('en-GB.plg_payperdownloadplus_content.ini'));
 		$this->uninstall_plugin('phocadownload', 'payperdownloadplus', null, array('phoca_plugin.js'), array('en-GB.plg_payperdownloadplus_phocadownload.ini'));
 		$this->uninstall_plugin('kunena', 'payperdownloadplus', null, array('kunena.jpg'), array('en-GB.plg_payperdownloadplus_kunena.ini'));
