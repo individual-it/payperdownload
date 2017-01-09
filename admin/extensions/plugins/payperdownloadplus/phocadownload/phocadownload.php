@@ -33,10 +33,11 @@ class plgPayperDownloadPlusPhocadownload extends plgSystemPayperDownloadPlus
 			{
 				jimport('joomla.filesystem.file');
 				$image = "";
-				if(JFile::exists(JPATH_ROOT . '/administrator/components/com_payperdownload/images/icon-48-phocadownload.png'))
+				if(JFile::exists(JPATH_ROOT . '/administrator/components/com_payperdownload/images/icon-48-phocadownload.png')) {
 					$image = "administrator/components/com_payperdownload/images/icon-48-phocadownload.png";
-					$plugins[] = array("name" => "Phoca Download", "description" => JText::_("PAYPERDOWNLOADPLUS_PHOCA_DOWNLOAD_FILE_68"),
-							"image" => $image);
+				}
+				$plugins[] = array("name" => "Phoca Download", "description" => JText::_("PAYPERDOWNLOADPLUS_PHOCA_DOWNLOAD_FILE_68"),
+						"image" => $image);
 			}
 	}
 
@@ -119,26 +120,27 @@ class plgPayperDownloadPlusPhocadownload extends plgSystemPayperDownloadPlus
 						$checkSession = true;
 						$deleteResourceFromSession = false;
 						$requiresPayment = true;
-						if(count($resourcesId) > 0)
+						if(count($resourcesId) > 0){
 							$shared = $this->isResourceShared((int)$resourcesId[0]);
-							$item = $this->getItemForResource($option);
-							if($user && $user->id)
+						}
+						$item = $this->getItemForResource($option);
+						if($user && $user->id)
+						{
+							if(
+									$this->isPrivilegedUser($user) ||
+									(count($requiredLicenses) > 0 && $this->isThereValidLicense($requiredLicenses, $decreaseDownloadCount, $item, $checkSession, $deleteResourceFromSession)) ||
+									(count($resourcesId) > 0 && $this->isTherePaidResource($resourcesId, $item, $decreaseDownloadCount, $shared, $checkSession, $deleteResourceFromSession)))
 							{
-								if(
-										$this->isPrivilegedUser($user) ||
-										(count($requiredLicenses) > 0 && $this->isThereValidLicense($requiredLicenses, $decreaseDownloadCount, $item, $checkSession, $deleteResourceFromSession)) ||
-										(count($resourcesId) > 0 && $this->isTherePaidResource($resourcesId, $item, $decreaseDownloadCount, $shared, $checkSession, $deleteResourceFromSession)))
-								{
-									$requiresPayment = false;
-								}
+								$requiresPayment = false;
 							}
-							else
+						}
+						else
+						{
+							if((count($resourcesId) > 0 && $this->isTherePaidResource($resourcesId, $item, $decreaseDownloadCount, $shared, $checkSession, $deleteResourceFromSession)))
 							{
-								if((count($resourcesId) > 0 && $this->isTherePaidResource($resourcesId, $item, $decreaseDownloadCount, $shared, $checkSession, $deleteResourceFromSession)))
-								{
-									$requiresPayment = false;
-								}
+								$requiresPayment = false;
 							}
+						}
 					}
 					if($requiresPayment)
 					{
@@ -170,14 +172,16 @@ class plgPayperDownloadPlusPhocadownload extends plgSystemPayperDownloadPlus
 			$scriptPath = "administrator/components/com_payperdownload/js/";
 			JHTML::script($scriptPath . 'ajax_source.js', false);
 			$version = new JVersion;
-			if($version->RELEASE >= "1.6")
+			if($version->RELEASE >= "1.6"){
 				$plugin_path = "plugins/payperdownloadplus/phocadownload/";
-				else
-					$plugin_path = "plugins/payperdownloadplus/";
-					$scriptPath = $uri . $plugin_path;
-					JHTML::script($scriptPath . 'phoca_plugin.js', false);
-					$cats = $this->getCategories();
-					?>
+			}
+			else {
+				$plugin_path = "plugins/payperdownloadplus/";
+			}
+			$scriptPath = $uri . $plugin_path;
+			JHTML::script ( $scriptPath . 'phoca_plugin.js', false );
+			$cats = $this->getCategories ();
+			?>
 			<tr>
 			<td align="left" class="key"><?php echo htmlspecialchars(JText::_("PAYPERDOWNLOADPLUS_PHOCADOWNLOAD_PLUGIN_CATEGORY"));?></td>
 			<td>
@@ -284,11 +288,13 @@ class plgPayperDownloadPlusPhocadownload extends plgSystemPayperDownloadPlus
 			$requiredLicenses = array();
 			$download = JRequest::getInt('download', 0);
 			$resourcesId = array();
- 			if($download == 0)
+ 			if($download == 0){
  				return;
+ 			}
 			$view = JRequest::getVar('view');
-			if($view != 'file' && $view != 'category')
+			if($view != 'file' && $view != 'category') {
 				return;
+			}
 			//Check download licenses
 			foreach($resources as $resource)
 			{

@@ -63,8 +63,9 @@ class  plgSystemPayperDownloadPlus extends JPlugin
 	{
 		$this->doMaintenance();
 		$mainframe = JFactory::getApplication();
-		if($mainframe->isAdmin())
+		if($mainframe->isAdmin()){
 			return;
+		}
 		$this->checkReferer();
 		$this->validateResourceAccessFromRequestParameters();
 		$option = JRequest::getVar('option');
@@ -94,8 +95,9 @@ class  plgSystemPayperDownloadPlus extends JPlugin
 				$deleteResourceFromSession = false;
 				$dispatcher->trigger('onGetDeleteResourceFromSession', array ($option, $resources, $requiredLicenses, $resourcesId, &$deleteResourceFromSession));
 				$requiresPayment = true;
-				if(count($resourcesId) > 0)
+				if(count($resourcesId) > 0){
 					$shared = $this->isResourceShared((int)$resourcesId[0]);
+				}
 				$item = $this->getItemForResource($option);
 				if($user && $user->id)
 				{
@@ -129,15 +131,19 @@ class  plgSystemPayperDownloadPlus extends JPlugin
 				else
 				{
 					$protocol = $_SERVER['SERVER_PROTOCOL'];
-					if(strtolower(substr($protocol, 0, 5)) == 'https')
+					if(strtolower(substr($protocol, 0, 5)) == 'https'){
 						$return = "https://";
-					else
+					}
+					else {
 						$return = "http://";
+					}
 					$port = $_SERVER['SERVER_PORT'];
-					if($port == '80')
+					if($port == '80') {
 						$port = '';
-					else
+					}
+					else {
 						$port = ':' . $port;
+					}
 					$return .= $_SERVER['SERVER_NAME'] . $port . $_SERVER['REQUEST_URI'];
 				}
 				$return = base64_encode($return);
@@ -152,8 +158,9 @@ class  plgSystemPayperDownloadPlus extends JPlugin
 					if(count($resourcesId) > 0)
 					{
 						$link .= "&res=" . (int)$resourcesId[0];
-						if(!$shared && $item)
+						if(!$shared && $item) {
 							$link .= "&item=" . urlencode($item);
+						}
 					}
 					$link .= "&returnurl=" . urlencode($return);
 					$menuitems = $this->getMenuItems();
@@ -227,8 +234,9 @@ class  plgSystemPayperDownloadPlus extends JPlugin
 			$db->setQuery($query);
 			return $db->loadObjectList();
 		}
-		else
+		else {
 			return array();
+		}
 	}
 	
 	/*
@@ -263,10 +271,12 @@ class  plgSystemPayperDownloadPlus extends JPlugin
 		$query = "SELECT id FROM #__menu WHERE link = '" . $db->escape($url) . "'";
 		$db->setQuery($query);
 		$itemId = $db->loadResult();
-		if(!$itemId)
+		if(!$itemId) {
 			$itemId = JRequest::getVar('Itemid');
-		if($itemId)
+		}
+		if($itemId) {
 			$url .= "&Itemid=" . urlencode($itemId);
+		}
 	}
 	
 	/*
@@ -307,10 +317,12 @@ class  plgSystemPayperDownloadPlus extends JPlugin
 			$query = "SELECT * FROM #__payperdownloadplus_download_links 
 				WHERE resource_id = $resource_id AND user_id = $user_id AND
 				(expiration_date IS NULL OR expiration_date >= NOW()) AND payed <> 0";
-			if($item_id != null && $item_id != 0)
+			if($item_id != null && $item_id != 0) {
 				$query .= " AND (item_id = '" . $db->escape($item_id) . "' OR item_id IS NULL)";
-			else
+			}
+			else {
 				$query .= " AND item_id IS NULL";
+			}
 			$db->setQuery($query);
 			$downloadlink = $db->loadObject();
 			if($downloadlink)
@@ -455,14 +467,18 @@ class  plgSystemPayperDownloadPlus extends JPlugin
 			return;
 		// get item id if available in request
 		$item_id = null;
-		if(preg_match("/\\S+\\-\\S+\\-\\S+\\-\\S+/", $access))
+		if(preg_match("/\\S+\\-\\S+\\-\\S+\\-\\S+/", $access)) {
 			list($resource_id, $hash, $rand, $item_id) = explode("-", $access);
-		else if(preg_match("/\\S+\\-\\S+\\-\\S+/", $access))
+		}
+		else if(preg_match("/\\S+\\-\\S+\\-\\S+/", $access)) {
 			list($resource_id, $hash, $rand) = explode("-", $access);
-		else if(preg_match("/\\S+\\:\\S+\\:\\S+\\:\\S+/", $access))
+		}
+		else if(preg_match("/\\S+\\:\\S+\\:\\S+\\:\\S+/", $access)) {
 			list($resource_id, $hash, $rand, $item_id) = explode(":", $access);
-		else if(preg_match("/\\S+\\:\\S+\\:\\S+/", $access))
+		}
+		else if(preg_match("/\\S+\\:\\S+\\:\\S+/", $access)) {
 			list($resource_id, $hash, $rand) = explode(":", $access);
+		}
 		
 		$db = JFactory::getDBO();
 		$resource_id = (int)$resource_id;
@@ -470,17 +486,20 @@ class  plgSystemPayperDownloadPlus extends JPlugin
 		$query = "SELECT * FROM #__payperdownloadplus_download_links 
 			WHERE resource_id = $resource_id AND random_value = '$esc_rand' AND
 			(expiration_date IS NULL OR expiration_date >= NOW()) AND payed <> 0";
-		if($item_id != null)
+		if($item_id != null) {
 			$query .= " AND (item_id = '" . $db->escape($item_id) . "' OR item_id IS NULL)";
-		else
+		}
+		else {
 			$query .= " AND item_id IS NULL";
+		}
 		$db->setQuery($query);
 		$downloadlink = $db->loadObject();
 		if($downloadlink)
 		{
 			$result = $hash == sha1($downloadlink->secret_word . $rand);
-			if($result)
+			if($result) {
 				$this->addResourceAccessToSession($resource_id, $item_id, $downloadlink->download_id);
+			}
 		}
 	}
 	
