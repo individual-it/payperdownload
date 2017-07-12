@@ -9,6 +9,7 @@
 	<license>GNU GPL</license>
 	<languages>
 		<language tag="en-GB">en-GB.plg_payperdownloadplus_phocadownload.ini</language>
+		<language tag="de-DE">de-DE.plg_payperdownloadplus_phocadownload.ini</language>
 	</languages>
 	<files>
 		<filename plugin="phocadownload">phocadownload.php</filename>
