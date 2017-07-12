@@ -68,9 +68,6 @@ class BaseHtmlForm
 				Joomla.tableOrdering(order, dirn, '');
 			}
 		</script>
-	<!--<div id="j-sidebar-container" class="span2">
-		<?php $this->renderSideBar($dataBindModel);?>
-	</div>-->
 	<div id="j-main-container">
 		<div id="filter-bar" class="btn-toolbar">
 		<?php $this->renderFilterBar($dataBindModel, $filters, $pageNav);?>
@@ -188,10 +185,6 @@ class BaseHtmlForm
 			</select>
 		</div>
 	<?php
-	}
-	
-	function renderSideBar($dataBindModel, $filters)
-	{
 	}
 	
 	function renderFieldsetsHeaders($fieldsets)
